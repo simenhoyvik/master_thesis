@@ -11,8 +11,6 @@ import pandas as pd
 from sklearn.model_selection import KFold
 from torch.utils.data import SubsetRandomSampler, DataLoader
 from data import create_data_loader
-from modeling_util import DrmmHistogram, DrmmSimmat, SimmatModule
-
 
 from utils import all_items_same, average_scores, calc_map, create_dir_if_not_exists, find_split_in_list, init_qid_dict, save_pickle, to_url
 warnings.simplefilter("ignore", UserWarning)

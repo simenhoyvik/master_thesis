@@ -2,7 +2,6 @@ import os
 from data import create_data_loader
 from models import Approach1Model
 from pytorch import train_general
-from sgd import train_sgd_clf
 from utils import create_dir_if_not_exists, load_pickle, mean_average_precision_at_n, preprocess_df_1, preprocess_df_bert_3, save_pickle
 import pandas as pd
 import warnings
@@ -24,21 +23,6 @@ class Approach1:
         self.models = {}
         self.base_path = "./models/approach1/"
         create_dir_if_not_exists(self.base_path)
-        
-    def train_sgd_sklearn(self, text_combination, cleaning, train, val, n_cv):
-        model_name = f'{text_combination}-cleaning-{cleaning}-n_cv-{n_cv}'
-        if self.verbose: print(f"Training model: {model_name}")
-        df = pd.concat([train, val], axis=0)
-        df = preprocess_df_1(df, self.verbose,text_combination,cleaning)
-        result, params, model = train_sgd_clf(
-            df = df,
-            cv = n_cv,
-            verbose = self.verbose,
-            n_epochs = self.n_epochs,
-        )
-        create_dir_if_not_exists(self.base_path + model_name)
-        save_pickle(self.base_path + model_name + "/best_model.pickle", model)
-        save_pickle(self.base_path + model_name + "/stats.pickle", (result, params))
 
     def train_sgd_pytorch(self, text_combination, cleaning, train, val, test, learning_rate):
         model_type = 'tf-idf-logreg'

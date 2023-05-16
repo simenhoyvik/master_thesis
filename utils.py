@@ -19,7 +19,6 @@ import gensim.downloader as api
 from os.path import exists
 from random import randrange
 import pandas as pd
-import nlpaug.augmenter.word as naw
 import torch.utils.data as data_utils
 from torch.utils.data import random_split, DataLoader
 from sklearn.model_selection import GroupShuffleSplit

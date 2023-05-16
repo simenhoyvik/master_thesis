@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import BertModel, RobertaModel, AlbertModel, AutoModel, AutoConfig
 
-from modeling_util import DRMMLogCountHistogram, DrmmHistogram, DrmmSimmat, SimmatModule, subbatch, un_subbatch
-
 class Approach1Model(nn.Module):
   def __init__(self, n_classes, tf_idf_size, dropout_value):
     super(Approach1Model, self).__init__()

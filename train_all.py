@@ -106,28 +106,6 @@ class Main:
             dropout_value = dropout_value
         )
 
-        self.approach4 = Approach4(
-            batch_size=batch_size,
-            n_epochs=n_epochs,
-            verbose=verbose,
-            device=self.device,
-            force_restart=force_restart,
-            early_stopping = early_stopping,
-            freeze = freeze,
-            dropout_value = dropout_value
-        )
-
-        self.approach5 = Approach5(
-            batch_size=batch_size,
-            n_epochs=n_epochs,
-            verbose=verbose,
-            device=self.device,
-            force_restart=force_restart,
-            early_stopping = early_stopping,
-            freeze = freeze,
-            dropout_value = dropout_value
-        )
-
         self.approach6 = Approach6(
             batch_size=batch_size,
             n_epochs=n_epochs,
@@ -150,6 +128,7 @@ class Main:
             print(f"LEARNING RATE: {learning_rate}")
             print(f"CV: {n_cv}")
         
+        '''
         self.bm25.train_and_evaluate_model(
             'study_abstract',
             self.train,
@@ -161,6 +140,7 @@ class Main:
             pubmed_search_amount = pubmed_search_amount, 
             df_test = self.test
         )
+        '''
         '''
         self.approach1.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
@@ -196,7 +176,6 @@ class Main:
             max_abstract_length = max_abstract_length
         )
         '''
-        '''
         self.approach6.train_all(
             text_columns = text_columns_approach_6,
             pre_trained_model_name = pre_trained_model_name,
@@ -207,7 +186,6 @@ class Main:
             max_abstract_length = max_abstract_length,
             sub_approach = 1
         )
-        '''
         '''
         self.approach6.train_all(
             text_columns = text_columns_approach_6,

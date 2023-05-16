@@ -1,0 +1,15 @@
+fastapi==0.95.0
+nltk==3.7
+numpy==1.23.5
+pandas==1.5.1
+pickle5==0.0.11
+pydantic==1.9.2
+pymed==0.8.9
+pytorch_pretrained_bert==0.6.2
+rank_bm25==0.2.2
+requests==2.28.1
+starlette==0.26.1
+torch==2.0.0
+tqdm==4.64.1
+transformers==4.24.0
+uvicorn==0.21.1

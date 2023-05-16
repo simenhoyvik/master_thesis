@@ -38,6 +38,42 @@ stop_words = stopwords.words('english')
 stopwords = set(stop_words)
 stopwords.update(["nan"])
 
+def process_history(history):
+    history['train_loss'] = list(torch.tensor(history['train_loss'], device = 'cpu').numpy())
+    history['val_loss'] = list(torch.tensor(history['val_loss'], device = 'cpu').numpy())
+    history['train_acc'] = list(torch.tensor(history['train_acc'], device = 'cpu').numpy())
+    history['val_acc'] = list(torch.tensor(history['val_acc'], device = 'cpu').numpy())
+    history['train_map'] = list(torch.tensor(history['train_map'], device = 'cpu').numpy())
+    history['val_map'] = list(torch.tensor(history['val_map'], device = 'cpu').numpy())
+    return history
+
+def find_best_model(directories):
+    histories = {}
+    best_val_map = 0
+    best_model = None
+    for directory in directories:
+        for x in os.walk(directory):
+            if x[0] == directory: continue
+            sub_dir = str(x[0])
+            try:
+                history_dir = sub_dir + "/" + str(x[2][0])
+                history = load_pickle(history_dir)
+                history = process_history(history)
+
+                if "/" in sub_dir:
+                    name_splits = sub_dir.split("/")
+                    name = name_splits[-1]
+                else:
+                    name = sub_dir
+                histories[name] = history
+            except:
+                pass
+    for name, history in histories.items():
+        if max(history['val_map']) > best_val_map: 
+            best_val_map = max(history['val_map'])
+            best_model = name
+        return best_val_map, best_model
+
 def df_to_list(df):
     res = []
     for column in df.columns:

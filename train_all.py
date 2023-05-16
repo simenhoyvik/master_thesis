@@ -182,6 +182,7 @@ class Main:
             max_len = max_len,
             train = self.train,
             val = self.val,
+            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
             sub_approach = 1
@@ -193,6 +194,7 @@ class Main:
             max_len = max_len,
             train = self.train,
             val = self.val,
+            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
             sub_approach = 2
@@ -202,17 +204,17 @@ class Main:
 N_CV = 5
 if platform == "linux":
     DEVICE = 'cuda'
-    BATCH_SIZE = 8
+    BATCH_SIZE = 32
 else: 
     DEVICE = 'cpu'
-    BATCH_SIZE = 2
+    BATCH_SIZE = 32
 DF_PATH = "./data_processed/"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15
 N_EPOCHS = 10
 LEARNING_RATE = 0.0001
-EARLY_STOPPING = 20
+EARLY_STOPPING = 10
 REDUCED = None
 VERBOSE = True
 FORCE_RESTART = False

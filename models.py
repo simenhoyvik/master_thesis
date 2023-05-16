@@ -115,8 +115,10 @@ class Approach6Model(nn.Module):
     self.linear1 = nn.Linear(self.model1.config.hidden_size * 3, n_classes)
 
     if freeze_bert:
-       for p in self.model.parameters():
-         p.requires_grad = False
+      for p in self.model1.parameters():
+        p.requires_grad = False
+      for p in self.model2.parameters():
+        p.requires_grad = False
   
   def forward(self, input_ids_q, attention_mask_q, token_type_ids_q,
               input_ids_a, attention_mask_a, token_type_ids_a,

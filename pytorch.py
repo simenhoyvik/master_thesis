@@ -23,7 +23,7 @@ def init_device(verbose, device):
         print(f"Training on device {device}")
     return device
 
-def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_name, model_type, text_combination, cleaning_type):
+def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_name, model_type, text_combination, cleaning_type, drop):
     print('Save PyTorch model to {}'.format(filename))
     state = {
         'epoch': epoch,
@@ -32,7 +32,8 @@ def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_na
         'pre_trained_model_name' : pre_trained_model_name,
         'model_type' : model_type,
         'text_combination' : text_combination,
-        'cleaning_type' : cleaning_type
+        'cleaning_type' : cleaning_type,
+        'drop' : drop
     }
     torch.save(state, filename)
 
@@ -121,7 +122,7 @@ def train_approach2_cv(approach, model, tokenizer, train, device, N_EPOCHS, verb
             history[fold]['val_map'].append(val_map_score)
 
             if best_map is None or val_map_score > best_map:
-                save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type)
+                save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop)
                 best_map = val_map_score
     
     history = average_scores(history, N_EPOCHS, cv)
@@ -689,7 +690,7 @@ def train_drmm(model, tokenizer, train_data_loader, val_data_loader, device, N_E
         history['val_map'].append(val_map_score)
 
         if best_map is None or val_map_score > best_map:
-            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, pre_trained_model_name, text_combination, cleaning_type)
+            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, pre_trained_model_name, text_combination, cleaning_type, drop)
             best_map = val_map_score
 
         if best_loss == None or val_loss < best_loss:
@@ -705,7 +706,7 @@ def train_drmm(model, tokenizer, train_data_loader, val_data_loader, device, N_E
     save_pickle(history_path, history)
     print("Finished training")   
 
-def train_general(approach, model, tokenizer, train_data_loader, val_data_loader, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, model_type, text_combination, cleaning_type):
+def train_general(approach, model, tokenizer, train_data_loader, val_data_loader, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, model_type, text_combination, cleaning_type, drop):
     torch.cuda.empty_cache()
     print(f"Starting training of Approach {approach}") 
 
@@ -759,7 +760,7 @@ def train_general(approach, model, tokenizer, train_data_loader, val_data_loader
         history['val_map'].append(val_map_score)
 
         if best_map is None or val_map_score > best_map:
-            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type)
+            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop)
             best_map = val_map_score
 
         if best_loss == None or val_loss < best_loss:
@@ -772,7 +773,7 @@ def train_general(approach, model, tokenizer, train_data_loader, val_data_loader
             print("Finished training")    
             return # If loss is not decreasing more after 5 epochs, return
 
-    save_pickle(history_path, history)
+        save_pickle(history_path, history)
     print(f"Finished training appraoch {approach}")   
     
 
@@ -829,7 +830,7 @@ def train_approach6(model, tokenizer, train_data_loader, val_data_loader, device
         history['val_map'].append(val_map_score)
 
         if best_map is None or val_map_score > best_map:
-            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type)
+            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop)
             best_map = val_map_score
 
         if best_loss == None or val_loss < best_loss:

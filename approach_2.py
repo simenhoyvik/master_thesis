@@ -5,7 +5,7 @@ from data import create_data_loader
 from models import BinaryClassifier
 from pubmed import search_and_process_pubmed
 from pytorch import eval_model, init_device, predict_approach_2_4, train_approach2_cv, train_general
-from utils import create_dir_if_not_exists, get_model_type, get_tokenizer, preprocess_df_bert_2_4
+from utils import create_dir_if_not_exists, find_best_model, get_model_type, get_tokenizer, preprocess_df_bert_2_4
 from transformers import BertTokenizer, AlbertTokenizer, RobertaTokenizer
 from pathlib import Path
 
@@ -82,7 +82,8 @@ class Approach2:
                 cleaning_type = cleaning_type,
                 batch_size = self.batch_size,
                 pre_trained_model_name = pre_trained_model_name,
-                model_type = model_type)
+                model_type = model_type,
+                drop = self.dropout_value)
 
     def train_and_evaluate_all(self, text_combinations, pre_trained_model_name, max_len, train, val, test, learning_rate, max_abstract_length, cv):
         print("Training all models for Approach 2")
@@ -101,8 +102,8 @@ class Approach2:
                     max_abstract_length = max_abstract_length,
                     cv = cv
                 )
-            self.evaluate(text_combination, model_name, max_len, test, learning_rate, cleaning_type, max_abstract_length)
-
+        best_map, best_model = find_best_model(["./history/approach2/"])
+        self.evaluate(text_combination, best_model, max_len, test, learning_rate, cleaning_type, max_abstract_length)
     
     def evaluate(self, text_combination, pre_trained_model_name, max_len, test, learning_rate, cleaning_type, max_abstract_length):
         if "/" in pre_trained_model_name:

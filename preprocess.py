@@ -4,6 +4,7 @@ import random
 import numpy as np
 import xmltodict
 from pymed import PubMed
+from os import walk
 from difflib import SequenceMatcher
 import xml.etree.ElementTree as et
 import pandas as pd
@@ -511,8 +512,26 @@ def merge_dfs():
     df = pd.concat([df_1,df_2])
     save_pickle("./data/processed/df.pickle", df)
 
+def remove_rows_if_below_30():
+    df_path = "./data_processed/"
+    filenames = next(walk(df_path), (None, None, []))[2]
+    dfs = []
+    for file in filenames:
+        dfs.append(load_pickle(df_path + file))
+    df = pd.concat(dfs)
+    counts = df['qid'].value_counts(dropna=False) 
+    valids = counts[counts>=30].index
+
+    df_reduced = df[df['qid'].isin(valids)]
+
+    df_splits = np.array_split(df_reduced, 3)
+    for i, df_split in enumerate(df_splits):
+        save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
+    print("")
+
+#remove_rows_if_below_30()
 #merge_dfs()
-create_approach_6_data()
+#create_approach_6_data()
 
 #create_pairwise_method()
 

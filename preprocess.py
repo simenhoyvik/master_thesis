@@ -496,7 +496,7 @@ def create_approach_6_data():
         if i % 500 == 0: print(f"Finished number {i}")
     new_df = pd.DataFrame(new_data, columns = [
         "qid", "docid", "title", "study_title", "study_abstract", "relevant_abstract", "label", "date", "study_date", "pubmed_id"])
-    df_splits = np.array_split(df, 3)
+    df_splits = np.array_split(new_df, 3)
     for i, df_split in enumerate(df_splits):
         save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
 

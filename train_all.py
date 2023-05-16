@@ -1,8 +1,8 @@
+import pandas as pd
 from approach_1 import Approach1
 from approach_2 import Approach2
 from approach_3 import Approach3
-from approach_4 import Approach4
-from approach_5 import Approach5
+from os import walk
 from approach_6 import Approach6
 from bm25 import Bm25
 from pubmed import PubMedModel
@@ -43,7 +43,14 @@ class Main:
             self.train, self.val, self.test = load_pickle('./data/train_test/train_test.pickle')
         '''
         #df = load_pickle("./data/analysis_testing/df.pickle")
-        df = load_pickle(df_path)
+        #df = load_pickle(df_path)
+        
+        filenames = next(walk(df_path), (None, None, []))[2]
+        dfs = []
+        for file in filenames:
+            dfs.append(load_pickle(df_path + file))
+        df = pd.concat(dfs)
+
         #df = load_pickle("./data/processed/df_pairwise.pickle")
         self.train, self.val, self.test = split_groupby(df, split_ratio, 'qid', reduced, self.verbose)
 
@@ -221,7 +228,7 @@ if platform == "linux":
 else: 
     DEVICE = 'cpu'
     BATCH_SIZE = 2
-DF_PATH = "./data_processed/df.pickle"
+DF_PATH = "./data_processed/"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15

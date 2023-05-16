@@ -221,7 +221,7 @@ if platform == "linux":
 else: 
     DEVICE = 'cpu'
     BATCH_SIZE = 2
-DF_PATH = "./data/processed/df_approach6.pickle"
+DF_PATH = "./data_processed/df.pickle"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15

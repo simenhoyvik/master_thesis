@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import numpy as np
 import xmltodict
 from pymed import PubMed
 from difflib import SequenceMatcher
@@ -468,7 +469,7 @@ def create_pairwise_method():
 
 def create_approach_6_data():
     new_data = []
-    df = load_pickle("./data/processed/df.pickle")
+    df = load_pickle("./data_raw/processed/df.pickle")
     print(f"Len of dataframe: {len(df)}")
     df = df[['qid', 'docid', 'title', 'study_title', 'study_abstract', 'label', 'date', 'study_date', 'pubmed_id']]
     df = df.drop_duplicates()
@@ -495,13 +496,14 @@ def create_approach_6_data():
         if i % 500 == 0: print(f"Finished number {i}")
     new_df = pd.DataFrame(new_data, columns = [
         "qid", "docid", "title", "study_title", "study_abstract", "relevant_abstract", "label", "date", "study_date", "pubmed_id"])
-    save_pickle("./data/processed/df_approach6.pickle", new_df) 
+    df_splits = np.array_split(df, 3)
+    for i, df_split in enumerate(df_splits):
+        save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
 
 def write_top_20_to_csv():
     df = load_pickle("./data/processed/df_part_1.pickle")
     df = df[:20]
     df.to_csv('./data/analysis_testing/top_20.csv')
-
 
 def merge_dfs():
     df_1 = load_pickle("./data/processed/df_part_1.pickle")

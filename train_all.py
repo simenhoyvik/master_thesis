@@ -1,12 +1,12 @@
 import pandas as pd
-from approach_1 import Approach1
-from approach_2 import Approach2
+from bert_interaction import BERT_Interaction
 from approach_3 import Approach3
 from os import walk
 from approach_6 import Approach6
 from bm25 import Bm25
 from pubmed import PubMedModel
 from pytorch import init_device
+from tfidf_logreg import TFIDF_LOGREG
 from utils import get_avg_studies_pr_query, load_pickle, save_pickle, split_groupby
 from sys import platform
 
@@ -72,7 +72,7 @@ class Main:
             reduced_n = pubmed_model_search_max,
         )
         
-        self.approach1 = Approach1(
+        self.tfidf_logreg = TFIDF_LOGREG(
             bm25_search = bm25_search, 
             bm25_reduced = pubmed_model_search_max,
             force_restart = force_restart,
@@ -84,7 +84,7 @@ class Main:
             early_stopping = early_stopping
         )
 
-        self.approach2 = Approach2(
+        self.approach2 = BERT_Interaction(
             batch_size=batch_size,
             n_epochs=n_epochs,
             verbose=verbose,
@@ -117,7 +117,7 @@ class Main:
             dropout_value = dropout_value
         )
 
-    def train_and_evaluate_all(self, text_combinations_approach_1_2, text_columns_approach_3_5, text_columns_approach_6, pre_trained_model_name, max_len, learning_rate, n_cv, max_abstract_length, bert_cv, pubmed_search_amount):
+    def train_and_evaluate_all(self, text_combinations_approach_1_2, text_columns_approach_3_5, text_columns_approach_6, pre_trained_model_name, max_len, learning_rate, n_cv, max_abstract_length, pubmed_search_amount):
 
         if self.verbose:
             print(f"TEXT COMBINATIONS (APPROACH 1 and 2): {text_combinations_approach_1_2}")
@@ -127,10 +127,9 @@ class Main:
             print(f"MAX LEN: {max_len}")
             print(f"LEARNING RATE: {learning_rate}")
             print(f"CV: {n_cv}")
-        
         '''
         self.bm25.train_and_evaluate_model(
-            'study_abstract',
+            'title study_abstract',
             self.train,
             self.val,
             self.test,
@@ -142,7 +141,7 @@ class Main:
         )
         '''
         '''
-        self.approach1.train_and_evaluate_all(
+        self.tfidf_logreg.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
             train = self.train, 
             val = self.val,
@@ -150,7 +149,6 @@ class Main:
             n_cv = n_cv,
             learning_rate = learning_rate
         )
-        '''
         '''
         self.approach2.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
@@ -161,10 +159,8 @@ class Main:
             test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
-            cv = bert_cv
         )
-        '''
-        '''
+
         self.approach3.train_and_evaluate_all(
             text_columns = text_columns_approach_3_5,
             pre_trained_model_name = pre_trained_model_name,
@@ -175,7 +171,7 @@ class Main:
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length
         )
-        '''
+
         self.approach6.train_all(
             text_columns = text_columns_approach_6,
             pre_trained_model_name = pre_trained_model_name,
@@ -187,7 +183,7 @@ class Main:
             max_abstract_length = max_abstract_length,
             sub_approach = 1
         )
-        '''
+
         self.approach6.train_all(
             text_columns = text_columns_approach_6,
             pre_trained_model_name = pre_trained_model_name,
@@ -199,22 +195,21 @@ class Main:
             max_abstract_length = max_abstract_length,
             sub_approach = 2
         )
-        '''
     
 N_CV = 5
 if platform == "linux":
     DEVICE = 'cuda'
-    BATCH_SIZE = 32
+    BATCH_SIZE = 16
 else: 
     DEVICE = 'cpu'
-    BATCH_SIZE = 32
+    BATCH_SIZE = 1
 DF_PATH = "./data_processed/"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15
-N_EPOCHS = 10
+N_EPOCHS = 20
 LEARNING_RATE = 0.0001
-EARLY_STOPPING = 10
+EARLY_STOPPING = 20
 REDUCED = None
 VERBOSE = True
 FORCE_RESTART = False
@@ -222,7 +217,6 @@ MAX_LEN = 512
 FREEZE = False
 DROPOUT_VALUE = 0.3
 MAX_ABSTRACT_LENGTH = None
-CV_BERT = None
 TEXT_COMBINATIONS_APPROACH_1_2 = ["title study_abstract", "title study_title study_abstract"]
 TEXT_COLUMNS_APPROACH_3 = [
     "title",
@@ -237,9 +231,8 @@ TEXT_COLUMNS_APPROACH_6[1] = [
 TEXT_COLUMNS_APPROACH_6[2] = [
     "title study_abstract", "title relevant_abstract"]
 
-PRE_TRAINED_MODEL_NAME =  {0: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': False},
-                           1: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': True}}
-
+PRE_TRAINED_MODEL_NAME =  {0: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': True},
+                           1: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': False}}
 CLEANING_TYPES = [True, False]
 
 main = Main(
@@ -268,8 +261,5 @@ main.train_and_evaluate_all(
     learning_rate = LEARNING_RATE,
     n_cv = N_CV,
     max_abstract_length = MAX_ABSTRACT_LENGTH,
-    bert_cv = CV_BERT,
     pubmed_search_amount = 1000
 )
-
-print("")

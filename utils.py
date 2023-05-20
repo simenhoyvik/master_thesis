@@ -272,7 +272,7 @@ def calc_map(df):
         if trues != 0:
             ap = ap / (trues)
             map += ap
-    map = map / len(grouped)
+    map = map / (len(grouped) + 0.0001) # To avoid division by zero
     return map
 
 def prepare(text, pipeline):
@@ -477,7 +477,7 @@ def preprocess_df_pairwise(df, text_combination, cleaning_type, max_abstract_len
 def preprocess_df_bert_3(df, text_columns, cleaning_type, max_abstract_length):
     for i, column in enumerate(text_columns): 
         if cleaning_type: df[column] = df[column].apply(clean)
-        if max_abstract_length != None: df = remove_too_large_abstracts(df, max_abstract_length, column)
+    if max_abstract_length != None: df = remove_too_large_abstracts(df, max_abstract_length, 'study_abstract')
     return df
 
 def preprocess_df_bert_6(df, text_combination, cleaning_type, max_abstract_length, sub_approach):

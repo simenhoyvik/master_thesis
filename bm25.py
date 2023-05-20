@@ -48,6 +48,7 @@ class Bm25():
         self.pubmed_n = pubmed_n
         self.reduced_n = reduced_n
         self.history_path = f'history/bm25/basic'
+        create_dir_if_not_exists("./history/bm25/")
 
     def train_and_evaluate_model(self, text_combination, train, val, test, cleaning_type):
         model_name = f'{text_combination}-cleaning-{cleaning_type}'
@@ -65,7 +66,7 @@ class Bm25():
         test = preprocess_df_bm25(test, text_combination, cleaning_type, 'text')
         tokenized_corpus_test = test['text'].tolist()
         test_model = BM25Okapi(tokenized_corpus_test)
-        test_acc, test_map = self.evaluate_model(test, val_model)
+        test_acc, test_map = self.evaluate_model(test, test_model)
 
         result_dict = {}
         result_dict['train_acc'] = train_acc
@@ -75,6 +76,8 @@ class Bm25():
         result_dict['test_acc'] = test_acc
         result_dict['test_map'] = test_map
         save_pickle(self.history_path, result_dict)
+
+        print("Finish evaluating BM25 Models")
 
     def evaluate_model(self, df, model):
         queries = df['title'].unique()

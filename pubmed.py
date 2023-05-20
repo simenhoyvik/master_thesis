@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from pymed import PubMed
 
-from utils import calc_map, get_avg_studies_pr_query, save_pickle
+from utils import calc_map, create_dir_if_not_exists, get_avg_studies_pr_query, save_pickle
 
 def search_pubmed(query, max_result):
     pubmed = PubMed(tool="MyTool", email="qug020@uib.no")
@@ -44,6 +44,7 @@ class PubMedModel:
         self.verbose = verbose
         self.force_restart = force_restart
         self.history_path = f'history/pubmed/basic'
+        create_dir_if_not_exists("./history/pubmed/")
 
     def calc_map_single_search(self, df):
         trues = 0
@@ -125,3 +126,4 @@ class PubMedModel:
         result_dict['map'] = map_score
         result_dict['pubmed_max_result'] = pubmed_search_amount
         save_pickle(self.history_path, result_dict)
+        print("Finish evaluating Pubmed Ranker")

@@ -470,7 +470,7 @@ def create_pairwise_method():
 
 def create_approach_6_data():
     new_data = []
-    df = load_pickle("./data_raw/processed/df.pickle")
+    df = load_pickle("./data/processed/df.pickle")
     print(f"Len of dataframe: {len(df)}")
     df = df[['qid', 'docid', 'title', 'study_title', 'study_abstract', 'label', 'date', 'study_date', 'pubmed_id']]
     df = df.drop_duplicates()
@@ -529,9 +529,9 @@ def remove_rows_if_below_30():
         save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
     print("")
 
-#remove_rows_if_below_30()
-#merge_dfs()
-#create_approach_6_data()
+merge_dfs()
+create_approach_6_data()
+remove_rows_if_below_30()
 
 #create_pairwise_method()
 

@@ -1,8 +1,8 @@
 import pandas as pd
 from bert_interaction import BERT_Interaction
-from approach_3 import Approach3
+from bert_representation import BERT_Representation
 from os import walk
-from approach_6 import Approach6
+from bert_dual_triple import BERT_Dual_Triple
 from bm25 import Bm25
 from pubmed import PubMedModel
 from pytorch import init_device
@@ -95,7 +95,7 @@ class Main:
             dropout_value = dropout_value
         )
 
-        self.approach3 = Approach3(
+        self.approach3 = BERT_Representation(
             batch_size=batch_size,
             n_epochs=n_epochs,
             verbose=verbose,
@@ -106,7 +106,7 @@ class Main:
             dropout_value = dropout_value
         )
 
-        self.approach6 = Approach6(
+        self.approach6 = BERT_Dual_Triple(
             batch_size=batch_size,
             n_epochs=n_epochs,
             verbose=verbose,
@@ -217,7 +217,7 @@ MAX_LEN = 512
 FREEZE = False
 DROPOUT_VALUE = 0.3
 MAX_ABSTRACT_LENGTH = None
-TEXT_COMBINATIONS_APPROACH_1_2 = ["title study_abstract", "title study_title study_abstract"]
+TEXT_COMBINATIONS_APPROACH_1_2 = ["title study_title study_abstract"]
 TEXT_COLUMNS_APPROACH_3 = [
     "title",
     "study_title",

@@ -18,7 +18,7 @@ class BERT_Representation:
         self.device = device
         self.freeze = freeze
         self.dropout_value = dropout_value
-        self.base_path = f"/models/{self.__class__.__name__}/"
+        self.base_path = f"./models/{self.__class__.__name__}/"
         self.early_stopping = early_stopping
         create_dir_if_not_exists(self.base_path)
     
@@ -52,7 +52,10 @@ class BERT_Representation:
                 batch_size = self.batch_size,
                 pre_trained_model_name = pre_trained_model_name,
                 model_type = model_type,
-                drop = self.dropout_value)
+                drop = self.dropout_value,
+                class_name = self.__class__.__name__,
+                max_abs_len = max_abstract_length,
+                tf_idf=None)
 
     def train_and_evaluate_all(self, text_columns, max_len, pre_trained_model_name, train, val, test, learning_rate, max_abstract_length):
         print("Training all models for Approach 3")
@@ -69,13 +72,16 @@ class BERT_Representation:
                 cleaning_type = cleaning_type,
                 max_abstract_length = max_abstract_length
             )
-        best_map, best_model = find_best_model([f"./history/{self.__class__.__name__}/"])
-        self.evaluate(text_columns, best_model, max_len, test, learning_rate, cleaning_type, max_abstract_length)
+        #self.evaluate(text_columns, best_model, max_len, test, learning_rate, cleaning_type, max_abstract_length)
 
-    def evaluate(self, text_columns, model_name, max_len, test, learning_rate, cleaning_type, max_abstract_length):
+    def find_best_model(self):
+        best_map, best_val_acc, best_model = find_best_model([f"./history/{self.__class__.__name__}/"])
+        return best_map, best_val_acc, best_model
+
+    def evaluate(self, model_name, max_len, test):
         if self.verbose: print(f"Evaluating model on test set: {model_name}")
         path = self.base_path + model_name +"/best_model.pt"
-        model, tokenizer, text_combination, cleaning_type = self.load_model(path)
+        model, tokenizer, text_combination, cleaning_type, max_abstract_length = self.load_model(path)
         test = preprocess_df_bert_3(test, text_combination, cleaning_type, max_abstract_length)
         test_data_loader = create_data_loader(test, tokenizer, max_len, self.batch_size, 3, None, None, None, None)
         test_acc, test_loss, test_map_score = eval_model(3, model, test_data_loader, self.device, len(test_data_loader.dataset.labels))
@@ -95,4 +101,4 @@ class BERT_Representation:
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         model.to(self.device)
-        return model, tokenizer, checkpoint['text_combination'], checkpoint['cleaning_type']
+        return model, tokenizer, checkpoint['text_combination'], checkpoint['cleaning_type'], checkpoint['max_abs_len']

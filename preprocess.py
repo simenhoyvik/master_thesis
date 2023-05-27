@@ -468,9 +468,9 @@ def create_pairwise_method():
     new_dfs_complete = pd.concat(new_dfs)
     save_pickle("./data/processed/df_pairwise.pickle", new_dfs_complete) 
 
-def create_approach_6_data():
+def remove_unsuded_columns(path):
     new_data = []
-    df = load_pickle("./data/processed/df.pickle")
+    df = load_pickle(path)
     print(f"Len of dataframe: {len(df)}")
     df = df[['qid', 'docid', 'title', 'study_title', 'study_abstract', 'label', 'date', 'study_date', 'pubmed_id']]
     df = df.drop_duplicates()
@@ -493,60 +493,40 @@ def create_approach_6_data():
             original_row['study_date'],
             original_row['pubmed_id'],
             ]
-        ) 
+        )
         if i % 500 == 0: print(f"Finished number {i}")
     new_df = pd.DataFrame(new_data, columns = [
         "qid", "docid", "title", "study_title", "study_abstract", "relevant_abstract", "label", "date", "study_date", "pubmed_id"])
-    df_splits = np.array_split(new_df, 3)
-    for i, df_split in enumerate(df_splits):
-        save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
+    save_pickle(path, new_df)
 
 def write_top_20_to_csv():
     df = load_pickle("./data/processed/df_part_1.pickle")
     df = df[:20]
     df.to_csv('./data/analysis_testing/top_20.csv')
 
-def merge_dfs():
-    df_1 = load_pickle("./data/processed/df_part_1.pickle")
-    df_2 = load_pickle("./data/processed/df_part_2.pickle")
+def merge_dfs(path1, path2, final_path):
+    df_1 = load_pickle(path1)
+    df_2 = load_pickle(path2)
     df = pd.concat([df_1,df_2])
-    save_pickle("./data/processed/df.pickle", df)
+    save_pickle(final_path, df)
 
-def remove_rows_if_below_30():
-    df_path = "./data_processed/"
-    filenames = next(walk(df_path), (None, None, []))[2]
-    dfs = []
-    for file in filenames:
-        dfs.append(load_pickle(df_path + file))
-    df = pd.concat(dfs)
+def remove_rows_if_below_30(path):
+    df = load_pickle(path)
     counts = df['qid'].value_counts(dropna=False) 
     valids = counts[counts>=30].index
-
     df_reduced = df[df['qid'].isin(valids)]
+    save_pickle(path, df_reduced)
 
-    df_splits = np.array_split(df_reduced, 3)
+def save_df_in_splits(path):
+    df = load_pickle(path)
+    df_splits = np.array_split(df, 3)
     for i, df_split in enumerate(df_splits):
         save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
-    print("")
-
-merge_dfs()
-create_approach_6_data()
-remove_rows_if_below_30()
-
-#create_pairwise_method()
 
 # This method preprocess all documents and store the processed objects in pickles
-#preprocess_all_xml_documents(path = dir_path, n = None, reviews_filename = reviews_filename)
-
-# This method convert the preprocessed documents to pandas objects
-#to_pandas(reviews_filename = reviews_filename)
-
-#rename_char_columns()
-#save_load()
-# This method load objects from pickles
-#df = load_pickle(reviews_pandas_filename)
-#value_counts = df.count()
-#print("")
-#rename_char_columns(df)
-
-#write_top_20_to_csv()
+preprocess_all_xml_documents(path = './data/reviews_part_1', n = None, reviews_filename = "./data/processed/all_reviews_part_1.pickle")
+preprocess_all_xml_documents(path = './data/reviews_part_2', n = None, reviews_filename = "./data/processed/all_reviews_part_2.pickle")
+merge_dfs(path1="./data/processed/df_part_1.pickle", path2="./data/processed/df_part_2.pickle", final_path="./data/processed/df.pickle")
+remove_unsuded_columns(path = "./data/processed/df.pickle")
+remove_rows_if_below_30(path= "./data/processed/df.pickle")
+save_df_in_splits(path= "./data/processed/df.pickle")

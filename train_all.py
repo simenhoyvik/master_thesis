@@ -7,7 +7,7 @@ from bm25 import Bm25
 from pubmed import PubMedModel
 from pytorch import init_device
 from tfidf_logreg import TFIDF_LOGREG
-from utils import get_avg_studies_pr_query, load_pickle, save_pickle, split_groupby
+from utils import load_pickle, split_groupby
 from sys import platform
 
 import torch, gc
@@ -127,47 +127,43 @@ class Main:
             print(f"MAX LEN: {max_len}")
             print(f"LEARNING RATE: {learning_rate}")
             print(f"CV: {n_cv}")
-        '''
+        
         self.bm25.train_and_evaluate_model(
             'title study_abstract',
             self.train,
             self.val,
-            self.test,
             True)
 
         self.pubmed_model.evaluate(
             pubmed_search_amount = pubmed_search_amount, 
-            df_test = self.test
+            df_val = self.val,
+            validation = True
         )
-        '''
-        '''
+        
         self.tfidf_logreg.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
             train = self.train, 
             val = self.val,
-            test = self.test,
-            n_cv = n_cv,
             learning_rate = learning_rate
         )
-        '''
+        
+        
         self.approach2.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
             pre_trained_model_name = pre_trained_model_name,
             max_len = max_len,
             train = self.train,
             val = self.val,
-            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
         )
-
+        
         self.approach3.train_and_evaluate_all(
             text_columns = text_columns_approach_3_5,
             pre_trained_model_name = pre_trained_model_name,
             max_len = max_len,
             train = self.train,
             val = self.val,
-            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length
         )
@@ -178,7 +174,6 @@ class Main:
             max_len = max_len,
             train = self.train,
             val = self.val,
-            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
             sub_approach = 1
@@ -190,16 +185,39 @@ class Main:
             max_len = max_len,
             train = self.train,
             val = self.val,
-            test = self.test,
             learning_rate = learning_rate,
             max_abstract_length = max_abstract_length,
             sub_approach = 2
         )
+
+        best_map_bm25 = self.bm25.get_best_val_score()
+        best_map_pubmed = self.pubmed_model.get_best_val_score()
+        best_map_tfidf, best_acc_tfidf, best_model_tfidf = self.tfidf_logreg.find_best_model()
+        best_map_1, best_val_acc_1, best_model_1 = self.approach2.find_best_model()
+        best_map_2, best_val_acc_2, best_model_2 = self.approach3.find_best_model()
+        best_map_3, best_val_acc_3, best_model_3 = self.approach6.find_best_model()
+        models = ['bm25','pubmed',best_model_tfidf,best_model_1,best_model_2,best_model_3]
+        maps = [best_map_bm25,best_map_pubmed,best_map_tfidf,best_map_1,best_map_2,best_map_3]
+
+        max_map = max(maps)
+        index = maps.index(max_map)
+        best_model = models[index]
+
+        if 'bm25' in best_model: self.bm25.evaluate(text_combination = 'title study_abstract', cleaning_type= True, df_test = self.test)
+        elif 'pubmed' in best_model: self.pubmed_model.evaluate(pubmed_search_amount = pubmed_search_amount, df = self.test, validation = False)
+        elif 'tf-idf' in best_model: self.tfidf_logreg.evaluate_best(model_name = best_model, max_len = max_len, test = self.test)
+        elif 'BERT-interaction' in best_model: self.approach2.evaluate(model_name = best_model, max_len = max_len, test = self.test)
+        elif 'BERT-representation' in best_model: self.approach3.evaluate(model_name = best_model, max_len = max_len, test = self.test)
+        elif 'BERT-triple' in best_model: self.approach6.evaluate(model_name = best_model, max_len = max_len, test = self.test, sub_approach=1)
+        elif 'BERT-dual' in best_model: self.approach6.evaluate(model_name = best_model, max_len = max_len, test = self.test, sub_approach=2)
+        else: print("Dont recognize model")
+        
+        
     
 N_CV = 5
 if platform == "linux":
     DEVICE = 'cuda'
-    BATCH_SIZE = 16
+    BATCH_SIZE = 2
 else: 
     DEVICE = 'cpu'
     BATCH_SIZE = 1
@@ -207,9 +225,9 @@ DF_PATH = "./data_processed/"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15
-N_EPOCHS = 20
-LEARNING_RATE = 0.0001
-EARLY_STOPPING = 20
+N_EPOCHS = 30
+LEARNING_RATE = 0.00001
+EARLY_STOPPING = 30
 REDUCED = None
 VERBOSE = True
 FORCE_RESTART = False
@@ -217,7 +235,7 @@ MAX_LEN = 512
 FREEZE = False
 DROPOUT_VALUE = 0.3
 MAX_ABSTRACT_LENGTH = None
-TEXT_COMBINATIONS_APPROACH_1_2 = ["title study_title study_abstract"]
+TEXT_COMBINATIONS_APPROACH_1_2 = ["title study_abstract"]
 TEXT_COLUMNS_APPROACH_3 = [
     "title",
     "study_title",
@@ -231,9 +249,10 @@ TEXT_COLUMNS_APPROACH_6[1] = [
 TEXT_COLUMNS_APPROACH_6[2] = [
     "title study_abstract", "title relevant_abstract"]
 
-PRE_TRAINED_MODEL_NAME =  {0: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': True},
-                           1: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': False}}
-CLEANING_TYPES = [True, False]
+PRE_TRAINED_MODEL_NAME =  {0: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': True}}
+PRE_TRAINED_MODEL_NAME =  {0: {'model_name': 'prajjwal1/bert-tiny', 'cleaning_type': False}}
+
+CLEANING_TYPES_TF_IDF = [True]
 
 main = Main(
     device = DEVICE,
@@ -245,7 +264,7 @@ main = Main(
     bm25_search = BM_25_INIT,
     pubmed_model_search_max = PUBMED_MODEL_SEARCH_MAX,
     split_ratio = SPLIT_RATIO,
-    cleaning_types = CLEANING_TYPES,
+    cleaning_types = CLEANING_TYPES_TF_IDF,
     early_stopping = EARLY_STOPPING,
     freeze = FREEZE,
     dropout_value = DROPOUT_VALUE,

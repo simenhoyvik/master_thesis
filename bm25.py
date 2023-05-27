@@ -48,7 +48,9 @@ class Bm25():
         self.pubmed_n = pubmed_n
         self.reduced_n = reduced_n
         self.history_path = f'history/bm25/basic'
+        self.eval_path = f'eval/bm25/basic'
         create_dir_if_not_exists("./history/bm25/")
+        create_dir_if_not_exists("./eval/bm25/")
 
     def train_and_evaluate_model(self, text_combination, train, val, test, cleaning_type):
         model_name = f'{text_combination}-cleaning-{cleaning_type}'
@@ -63,21 +65,18 @@ class Bm25():
         val_model = BM25Okapi(tokenized_corpus_val)
         val_acc, val_map = self.evaluate_model(val, val_model)
 
-        test = preprocess_df_bm25(test, text_combination, cleaning_type, 'text')
-        tokenized_corpus_test = test['text'].tolist()
-        test_model = BM25Okapi(tokenized_corpus_test)
-        test_acc, test_map = self.evaluate_model(test, test_model)
-
         result_dict = {}
         result_dict['train_acc'] = train_acc
         result_dict['train_map'] = train_map
         result_dict['val_acc'] = val_acc
         result_dict['val_map'] = val_map
-        result_dict['test_acc'] = test_acc
-        result_dict['test_map'] = test_map
         save_pickle(self.history_path, result_dict)
-
         print("Finish evaluating BM25 Models")
+
+    def get_best_val_score(self):
+        result = load_pickle(self.history_path)
+        return result['val_map']
+
 
     def evaluate_model(self, df, model):
         queries = df['title'].unique()
@@ -138,16 +137,17 @@ class Bm25():
             print("Cant find model")
             return None
 
-    def evaluate(self, df_test):
-        unique_search_queries = df_test['title'].unique()
-        tot_map = 0
-        for search_query in unique_search_queries:
-            query_df = df_test.loc[df_test['title'] == search_query]
-            tot_map += self.bm_25_rerank(query_df, search_query, self.pubmed_n)
-        tot_map = tot_map / len(unique_search_queries)
-        if self.verbose: 
-            print("Evaluating BM25 ranking method")
-            print(f"MAP = {tot_map}")
+    def evaluate(self, text_combination, cleaning_type, df):
+        test = preprocess_df_bm25(df, text_combination, cleaning_type, 'text')
+        tokenized_corpus_val = test['text'].tolist()
+        val_model = BM25Okapi(tokenized_corpus_val)
+        test_acc, test_map = self.evaluate_model(test, val_model)
+
+        result_dict = {}
+        result_dict['test_acc'] = test_acc
+        result_dict['test_map'] = test_map
+        save_pickle(self.eval_path, result_dict)
+        print("Finish evaluating BM25 Models")
 
 
         

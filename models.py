@@ -46,8 +46,18 @@ class BinaryClassifier(nn.Module):
       attention_mask=attention_mask,
       token_type_ids=token_type_ids,
     )
-    pooler_output = output.pooler_output
-    output = self.linear1(pooler_output)
+    cls_outputs = output.pooler_output
+    if not self.freeze_bert:
+      output = self.linear1(cls_outputs)
+    else:
+      output = self.linear2(cls_outputs)
+      output = self.drop(output)
+      output = self.relu(output)
+      output = self.linear3(output)
+      output = self.drop(output)
+      output = self.relu(output)
+      output = self.linear4(output)
+
     return output
 
 class Approach3Linear(nn.Module):

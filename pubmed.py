@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from pymed import PubMed
 
-from utils import calc_map, create_dir_if_not_exists, get_avg_studies_pr_query, save_pickle
+from utils import calc_map, create_dir_if_not_exists, get_avg_studies_pr_query, load_pickle, save_pickle
 
 def search_pubmed(query, max_result):
     pubmed = PubMed(tool="MyTool", email="qug020@uib.no")
@@ -44,7 +44,9 @@ class PubMedModel:
         self.verbose = verbose
         self.force_restart = force_restart
         self.history_path = f'history/pubmed/basic'
+        self.eval_path = f'eval/pubmed/basic'
         create_dir_if_not_exists("./history/pubmed/")
+        create_dir_if_not_exists("./eval/pubmed/")
 
     def calc_map_single_search(self, df):
         trues = 0
@@ -58,12 +60,12 @@ class PubMedModel:
         map += ap
         return map
 
-    def evaluate(self, pubmed_search_amount, df_test):
+    def evaluate(self, pubmed_search_amount, df, validation):
         dfs = []
-        unique_search_queries = df_test['title'].unique()
+        unique_search_queries = df['title'].unique()
         tot_map = 0
         for search_query in unique_search_queries:
-            query_df = df_test.loc[df_test['title'] == search_query]
+            query_df = df.loc[df['title'] == search_query]
             date = query_df['date'].to_numpy()[0]
             qid = query_df['qid'].to_numpy()[0]
             date = pd.to_datetime(date).date()
@@ -125,5 +127,13 @@ class PubMedModel:
         result_dict['acc'] = accurracy
         result_dict['map'] = map_score
         result_dict['pubmed_max_result'] = pubmed_search_amount
-        save_pickle(self.history_path, result_dict)
-        print("Finish evaluating Pubmed Ranker")
+        if validation:
+            save_pickle(self.history_path, result_dict)
+            print("Finish validating Pubmed Ranker")
+        else:
+            save_pickle(self.eval_path, result_dict)
+            print("Finish evaluating Pubmed Ranker")
+
+    def get_best_val_score(self):
+        result_dict = load_pickle(self.history_path)
+        return result_dict['map']

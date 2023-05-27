@@ -50,6 +50,7 @@ def process_history(history):
 def find_best_model(directories):
     histories = {}
     best_val_map = 0
+    best_val_acc = 0
     best_model = None
     for directory in directories:
         for x in os.walk(directory):
@@ -71,8 +72,9 @@ def find_best_model(directories):
     for name, history in histories.items():
         if max(history['val_map']) > best_val_map: 
             best_val_map = max(history['val_map'])
+            best_val_acc = max(history['val_acc'])
             best_model = name
-        return best_val_map, best_model
+    return best_val_map, best_val_acc, best_model
 
 def df_to_list(df):
     res = []

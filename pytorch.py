@@ -23,7 +23,7 @@ def init_device(verbose, device):
         print(f"Training on device {device}")
     return device
 
-def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_name, model_type, text_combination, cleaning_type, drop):
+def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_name, model_type, text_combination, cleaning_type, drop, max_abs_len, tf_idf):
     print('Save PyTorch model to {}'.format(filename))
     state = {
         'epoch': epoch,
@@ -33,7 +33,9 @@ def save_checkpoint(epoch, model, tokenizer, map, filename, pre_trained_model_na
         'model_type' : model_type,
         'text_combination' : text_combination,
         'cleaning_type' : cleaning_type,
-        'drop' : drop
+        'drop' : drop,
+        'max_abs_len' : max_abs_len,
+        'tf_idf' : tf_idf
     }
     torch.save(state, filename)
 
@@ -53,82 +55,6 @@ def init_optimizer(model, learning_rate, train_data_loader, N_EPOCHS):
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps)
     return optimizer, scheduler
-
-def train_approach2_cv(approach, model, tokenizer, train, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, model_type, text_combination, cleaning_type, cv, max_len):
-    torch.cuda.empty_cache()
-    if verbose: print("Starting training") 
-
-    model_path_dir = f'models/approach{approach}/{model_name}'
-    base_history_path = f'history/approach{approach}/{model_name}'
-    create_dir_if_not_exists(model_path_dir)
-    create_dir_if_not_exists(base_history_path)
-    best_model_path = model_path_dir + "/best_model.pt"
-    history_path = base_history_path + "/history.pickle"
-
-    history = {}
-    best_map = None
-    best_loss = None
-    loss_not_decreasing_counter = 0
-    loss_fn = nn.BCEWithLogitsLoss().to(device)
-    
-    splits = KFold(n_splits = cv, shuffle = True, random_state = 42)
-
-    for fold, (train_idx, val_idx) in enumerate(splits.split(np.arange(len(train)))):
-
-        print('Fold {}'.format(fold + 1))
-        history[fold] = defaultdict(list)
-
-        train_sampler = SubsetRandomSampler(train_idx)
-        val_sampler = SubsetRandomSampler(val_idx)
-        train_data_loader = create_data_loader(train, tokenizer, max_len, batch_size, 2, None, None, train_sampler, None)
-        val_data_loader = create_data_loader(train, tokenizer, max_len, batch_size, 2, None, None, val_sampler, None)
-
-        optimizer, scheduler = init_optimizer(model, learning_rate, train_data_loader, N_EPOCHS)
-
-        for epoch in range(N_EPOCHS):
-
-            if verbose: 
-                print(f'Epoch {epoch + 1}/{N_EPOCHS}')
-                print('-' * 20)
-
-            train_acc, train_loss, train_map_score = train_epoch(
-                approach,
-                model,
-                train_data_loader,    
-                loss_fn, 
-                optimizer, 
-                device,
-                scheduler,
-                len(train_sampler.indices)
-            )
-
-            val_acc, val_loss, val_map_score = eval_model(
-                approach,
-                model,
-                val_data_loader,
-                device, 
-                len(val_sampler.indices)
-            )
-
-            if verbose: 
-                print(f'Train loss {train_loss} accuracy {train_acc} map {train_map_score}')
-                print(f'Val   loss {val_loss}   accuracy {val_acc}   map {val_map_score}')
-
-            history[fold]['train_acc'].append(train_acc)
-            history[fold]['train_loss'].append(train_loss)
-            history[fold]['train_map'].append(train_map_score)
-            history[fold]['val_acc'].append(val_acc)
-            history[fold]['val_loss'].append(val_loss)
-            history[fold]['val_map'].append(val_map_score)
-
-            if best_map is None or val_map_score > best_map:
-                save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop)
-                best_map = val_map_score
-    
-    history = average_scores(history, N_EPOCHS, cv)
-    
-    save_pickle(history_path, history)
-    if verbose: print("Finished training")
 
 def predict_approach_2_4(model, data_loader, test, device):
     df = pd.DataFrame(columns=['pred', 'pubmed_id'])
@@ -636,82 +562,12 @@ def train_drmm_epoch(model, data_loader, loss_fn, optimizer, device, scheduler, 
     
     return correct_predictions.double() / n_examples, np.mean(losses), map_score
 
-
-def train_drmm(model, tokenizer, train_data_loader, val_data_loader, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, text_combination, cleaning_type):
-    torch.cuda.empty_cache()
-    print("Starting training") 
-
-    model_path_dir = f'models/approach5/{model_name}'
-    base_history_path = f'history/approach5/{model_name}'
-    create_dir_if_not_exists(model_path_dir)
-    create_dir_if_not_exists(base_history_path)
-    best_model_path = model_path_dir + "/best_model.pt"
-    history_path = base_history_path + "/history.pickle"
-
-    history = defaultdict(list)
-    best_map = None
-    best_loss = None
-    loss_not_decreasing_counter = 0
-    loss_fn = nn.BCEWithLogitsLoss().to(device)
-    
-    optimizer, scheduler = init_optimizer(model, learning_rate, train_data_loader, N_EPOCHS)
-
-    for epoch in range(N_EPOCHS):
-
-        print(f'Epoch {epoch + 1}/{N_EPOCHS}')
-        print('-' * 20)
-
-        train_acc, train_loss, train_map_score = train_drmm_epoch(
-            model,
-            train_data_loader,    
-            loss_fn, 
-            optimizer, 
-            device, 
-            scheduler, 
-            len(train_data_loader.dataset.labels)
-        )
-
-        val_acc, val_loss, val_map_score = eval_drmm(
-            model,
-            val_data_loader,
-            loss_fn, 
-            device, 
-            len(val_data_loader.dataset.labels)
-        )    
-    
-        print(f'Train loss {train_loss} accuracy {train_acc} map {train_map_score}')
-        print(f'Val   loss {val_loss}   accuracy {val_acc} map {val_map_score}')
-
-        history['train_acc'].append(train_acc)
-        history['train_loss'].append(train_loss)
-        history['train_map'].append(train_map_score)
-        history['val_acc'].append(val_acc)
-        history['val_loss'].append(val_loss)
-        history['val_map'].append(val_map_score)
-
-        if best_map is None or val_map_score > best_map:
-            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, pre_trained_model_name, text_combination, cleaning_type, drop)
-            best_map = val_map_score
-
-        if best_loss == None or val_loss < best_loss:
-            best_loss = val_loss
-            loss_not_decreasing_counter = 0
-        else: loss_not_decreasing_counter += 1
-
-        if loss_not_decreasing_counter >= early_stopping:
-            save_pickle(history_path, history)
-            print("Finished training")    
-            return # If loss is not decreasing more after 5 epochs, return
-
-    save_pickle(history_path, history)
-    print("Finished training")   
-
-def train_general(approach, model, tokenizer, train_data_loader, val_data_loader, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, model_type, text_combination, cleaning_type, drop):
+def train_general(approach, model, tokenizer, train_data_loader, val_data_loader, device, N_EPOCHS, verbose, learning_rate, batch_size, model_name, early_stopping, pre_trained_model_name, model_type, text_combination, cleaning_type, drop, class_name, max_abs_len, tf_idf):
     torch.cuda.empty_cache()
     print(f"Starting training of Approach {approach}") 
 
-    model_path_dir = f'models/approach{approach}/{model_name}'
-    base_history_path = f'history/approach{approach}/{model_name}'
+    model_path_dir = f'models/{class_name}/{model_name}'
+    base_history_path = f'history/{class_name}/{model_name}'
     create_dir_if_not_exists(model_path_dir)
     create_dir_if_not_exists(base_history_path)
     best_model_path = model_path_dir + "/best_model.pt"
@@ -760,7 +616,7 @@ def train_general(approach, model, tokenizer, train_data_loader, val_data_loader
         history['val_map'].append(val_map_score)
 
         if best_map is None or val_map_score > best_map:
-            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop)
+            save_checkpoint(epoch, model, tokenizer, best_map, best_model_path, pre_trained_model_name, model_type, text_combination, cleaning_type, drop, max_abs_len, tf_idf)
             best_map = val_map_score
 
         if best_loss == None or val_loss < best_loss:

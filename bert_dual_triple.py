@@ -18,8 +18,8 @@ class BERT_Dual_Triple:
         self.device = device
         self.freeze = freeze
         self.dropout_value = dropout_value
-        self.base_path1 = f"/models/BERT_Triple/"
-        self.base_path1 = f"/models/BERT_Dual/"
+        self.base_path1 = f"./models/BERT_Triple/"
+        self.base_path2 = f"./models/BERT_Dual/"
         self.early_stopping = early_stopping
         create_dir_if_not_exists(self.base_path1)
         create_dir_if_not_exists(self.base_path2)
@@ -40,8 +40,12 @@ class BERT_Dual_Triple:
         else: model = Approach6_2Model(1, pre_trained_model_name, self.freeze, self.dropout_value)
         model.to(self.device)
         tokenizer = get_tokenizer(model_type, pre_trained_model_name)
-        if sub_approach == 1: temp_approach = 6
-        else: temp_approach = 62
+        if sub_approach == 1: 
+            temp_approach = 6
+            class_name = "BERT_Triple"
+        else: 
+            temp_approach = 62
+            class_name = "BERT_Dual"
         train_data_loader = create_data_loader(train, tokenizer, max_len, self.batch_size, temp_approach, None, None, None, None)
         val_data_loader = create_data_loader(val, tokenizer, max_len, self.batch_size, temp_approach, None, None, None, None)
         train_general(
@@ -61,7 +65,10 @@ class BERT_Dual_Triple:
                 batch_size = self.batch_size,
                 pre_trained_model_name = pre_trained_model_name,
                 model_type = model_type,
-                drop = self.dropout_value)
+                drop = self.dropout_value,
+                class_name = class_name,
+                max_abs_len = max_abstract_length,
+                tf_idf=None)
 
     def train_all(self, text_columns, max_len, pre_trained_model_name, train, val, test, learning_rate, max_abstract_length, sub_approach):
         print("Training all models for Approach 6")
@@ -80,18 +87,26 @@ class BERT_Dual_Triple:
                 sub_approach = sub_approach
             )
         if sub_approach == 1:
-            best_map, best_model = find_best_model(["./history/approach6/"])
+            best_map, best_val_acc, best_model = find_best_model(["./history/BERT_Triple/"])
         else:
-            best_map, best_model = find_best_model(["./history/approach62/"])
-        self.evaluate(text_columns, best_model, max_len, test, learning_rate, cleaning_type, max_abstract_length, sub_approach)
+            best_map, best_val_acc, best_model = find_best_model(["./history/BERT_Dual/"])
+        #self.evaluate(text_columns, best_model, max_len, test, learning_rate, cleaning_type, max_abstract_length, sub_approach)
 
-    def evaluate(self, text_columns, model_name, max_len, test, learning_rate, cleaning_type, max_abstract_length, sub_approach):
+    def find_best_model(self):
+        best_map1, best_val_acc1, best_model1 = find_best_model(["./history/BERT_Triple/"])
+        best_map2, best_val_acc2, best_model2 = find_best_model(["./history/BERT_Dual/"])
+        if best_map1 > best_map2:
+            return best_map1, best_val_acc1, best_model1
+        else:
+            return best_map2, best_val_acc2, best_model2
+
+    def evaluate(self, model_name, max_len, test, sub_approach):
         if self.verbose: print(f"Evaluating model on test set: {model_name}")
         if sub_approach == 1:
             path = self.base_path1 + model_name +"/best_model.pt"
         else:
-            path = self.base_path1 + model_name +"/best_model.pt"
-        model, tokenizer, text_columns, cleaning_type = self.load_model(path, sub_approach)
+            path = self.base_path2 + model_name +"/best_model.pt"
+        model, tokenizer, text_columns, cleaning_type, max_abstract_length = self.load_model(path, sub_approach)
         test = preprocess_df_bert_6(test, text_columns, cleaning_type, max_abstract_length, sub_approach)
         if sub_approach == 1:
             test_data_loader = create_data_loader(test, tokenizer, max_len, self.batch_size, 6, None, None, None, None)
@@ -106,10 +121,10 @@ class BERT_Dual_Triple:
         eval_result['best_model'] = model_name
         print(f'Test   loss {test_loss}   accuracy {test_acc} map {test_map_score}')
         if sub_approach == 1:
-            create_dir_if_not_exists("./eval/approach6/")
+            create_dir_if_not_exists("./eval/BERT_Triple/")
             save_pickle("./eval/BERT_Triple/eval", eval_result)
         else:
-            create_dir_if_not_exists("./eval/approach62/")
+            create_dir_if_not_exists("./eval/BERT_Dual/")
             save_pickle("./eval/BERT_Dual/eval", eval_result)
             
     def load_model(self, path, sub_approach):
@@ -122,4 +137,4 @@ class BERT_Dual_Triple:
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         model.to(self.device)
-        return model, tokenizer, checkpoint['text_combination'], checkpoint['cleaning_type']
+        return model, tokenizer, checkpoint['text_combination'], checkpoint['cleaning_type'], checkpoint['max_abs_len']

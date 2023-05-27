@@ -21,6 +21,20 @@ is stored in 3 seperate pickles for making it possible to upload them here to gi
 
 # Training Algorithms
 
-The algorithms is trained by running the train_all.py script. 
+The algorithms is trained by running the train_all.py script. This script train and evaluate a series of model
+where the best one is chosen and evaluated on the test set. The models trained are TF-IDF with logistic regression and
+different variants of interaction and representation based BERT models. The script includes a series of hyperparameter
+configurations that can be adjusted. When the finish training a model, the training history will be saved in a unique folder
+inside a history folder. The selected model is evaluated on the test set where the results are stored in the eval folder.
+
+# Visualizing training performance
+
+The jupyter notebook file print_train_stats.ipynb visualize all training and validation performances that are stored in the history folder.
+For each model, it is possible to get an overview of accuracy, loss and MAP score throughout the amount of epochs trained.
+
+# Data Analysis
+
+The jupyter notebook file data_analysis.ipynb visualize different forms of data statistics and analysis of the created dataset.
+The script focuses on getting an overview of words and tokens count distribution for different text features.
 
 

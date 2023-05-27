@@ -17,10 +17,7 @@ import re
 
 from utils import load_pickle, save_pickle
 
-dir_path = './data/reviews_part_2'
-reviews_filename = "./data/processed/all_reviews_part_2.pickle"
-reviews_pandas_filename = "./data/processed/df_part_2.pickle"
-
+# Configurations
 title_sim_ratio = 0.98
 title_sim_ratio_2 = 0.85
 author_sim_ratio = 0.75
@@ -340,54 +337,6 @@ def study_type_to_rows(review, study_type):
         all_rows.append(flattened)
     return all_rows
 
-def to_pandas(reviews_filename):
-    reviews = load_pickle(reviews_filename)
-    all_rows = []
-    all_df = None
-    first = True
-    print(f"Amount of reviews: {len(reviews)}")
-    print("Dict to rows")
-    for i, (review_name, review) in enumerate(reviews.items()):
-        if i % 100 == 0: 
-            print(f"Finished retrieving rows for review number {i}")
-            print(f"Current total number of rows: {len(all_rows)}")
-        if not review: continue
-        all_rows += study_type_to_rows(review, "included_studies")
-        all_rows += study_type_to_rows(review, "excluded_studies")
-    print("Finished converting dict to rows")
-    print(f"Totalt number of rows: {len(all_rows)}")
-    print("Rows to pandas")
-    '''
-    for i, row in enumerate(all_rows):
-        if i % 100 == 0: 
-            print(f"Finished converting row number {i} to pandas")
-        df = pd.DataFrame([row])
-        if first: 
-            all_df = df
-            first = False
-        else:
-            all_df = pd.concat([all_df, df], axis=0, ignore_index=True)
-    df = all_df
-    '''
-    df = pd.DataFrame.from_records(all_rows)
-    try:
-        df['date'] = pd.to_datetime(df['date'], utc=True)
-    except:
-        df['date'] = None
-    df['study_date'] = pd.to_datetime(df['document_date'], utc=True)
-    df.drop(['document_date'], axis=1)
-    df['qid'] = df.groupby(['title']).ngroup()
-    df.rename(columns={'document_abstract':'study_abstract'}, inplace=True)
-    df.rename(columns={'document_pubmed_id':'pubmed_id'}, inplace=True)
-    df.rename(columns={'document_journal':'journal'}, inplace=True)
-    df['docid'] = df.groupby(['study_abstract']).ngroup()
-    df.rename(columns={'TI':'study_title'}, inplace=True)
-    df.rename(columns={'AU':'study_author'}, inplace=True)
-    df.rename(columns={'YR':'study_year'}, inplace=True)
-    df = df[df.columns[df.isnull().mean() < 0.7]]
-    print("Finished converting dict to pandas")
-    save_pickle(reviews_pandas_filename, df)
-
 def merge_authors(authors):
     merged = ''
     for i, author in enumerate(authors):
@@ -398,31 +347,6 @@ def merge_authors(authors):
 
 def merge_author_and_title(authors, title):
     return authors + title
-
-def reduce_and_save_df(df):
-    df = df[df.columns[df.isnull().mean() < 0.7]]
-    save_pickle(reviews_pandas_filename, df) 
-
-def rename_df(df):
-    df.drop(['document_date'], axis=1)
-    df.rename(columns={'TI':'study_title'}, inplace=True)
-    df.rename(columns={'AU':'study_author'}, inplace=True)
-    df.rename(columns={'YR':'study_year'}, inplace=True)
-    df.rename(columns={'id':'pubmed_id'}, inplace=True)
-    save_pickle(reviews_pandas_filename, df) 
-
-def rename_char_columns():
-    df = load_pickle(reviews_pandas_filename)
-    df.rename(columns={'characteristics_char_method':'study_method'}, inplace=True)
-    df.rename(columns={'characteristics_char_participants':'study_participants'}, inplace=True)
-    df.rename(columns={'characteristics_char_interventions':'study_interventions'}, inplace=True)
-    df.rename(columns={'characteristics_char_outcomes':'study_outcomes'}, inplace=True)
-    df.rename(columns={'characteristics_char_notes':'study_notes'}, inplace=True)
-    save_pickle(reviews_pandas_filename, df) 
-
-def save_load():
-    df = load_pickle(reviews_pandas_filename)
-    save_pickle(reviews_pandas_filename, df) 
 
 def create_pairwise_single(q, df):
     new_data = []
@@ -458,16 +382,6 @@ def create_pairwise_single(q, df):
     new_df = pd.DataFrame(new_data, columns = ["qid", "title", "pos_title", "pos_abstract", "neg_title", "neg_abstract", "label"])
     return new_df
 
-def create_pairwise_method():
-    new_dfs = []
-    df = load_pickle(reviews_pandas_filename)
-    qids =  df["qid"].unique().tolist()
-    for q in qids:
-        q_df = df.loc[df['qid'] == q]
-        new_dfs.append(create_pairwise_single(q, q_df))
-    new_dfs_complete = pd.concat(new_dfs)
-    save_pickle("./data/processed/df_pairwise.pickle", new_dfs_complete) 
-
 def remove_unsuded_columns(path):
     new_data = []
     df = load_pickle(path)
@@ -499,11 +413,6 @@ def remove_unsuded_columns(path):
         "qid", "docid", "title", "study_title", "study_abstract", "relevant_abstract", "label", "date", "study_date", "pubmed_id"])
     save_pickle(path, new_df)
 
-def write_top_20_to_csv():
-    df = load_pickle("./data/processed/df_part_1.pickle")
-    df = df[:20]
-    df.to_csv('./data/analysis_testing/top_20.csv')
-
 def merge_dfs(path1, path2, final_path):
     df_1 = load_pickle(path1)
     df_2 = load_pickle(path2)
@@ -521,12 +430,12 @@ def save_df_in_splits(path):
     df = load_pickle(path)
     df_splits = np.array_split(df, 3)
     for i, df_split in enumerate(df_splits):
-        save_pickle(f"./data_processed/df_{i+1}.pickle", df_split) 
+        save_pickle(f"./data/df_{i+1}.pickle", df_split) 
 
 # This method preprocess all documents and store the processed objects in pickles
-preprocess_all_xml_documents(path = './data/reviews_part_1', n = None, reviews_filename = "./data/processed/all_reviews_part_1.pickle")
-preprocess_all_xml_documents(path = './data/reviews_part_2', n = None, reviews_filename = "./data/processed/all_reviews_part_2.pickle")
-merge_dfs(path1="./data/processed/df_part_1.pickle", path2="./data/processed/df_part_2.pickle", final_path="./data/processed/df.pickle")
-remove_unsuded_columns(path = "./data/processed/df.pickle")
-remove_rows_if_below_30(path= "./data/processed/df.pickle")
-save_df_in_splits(path= "./data/processed/df.pickle")
+preprocess_all_xml_documents(path = './data/reviews_part_1', n = None, reviews_filename = "./data/all_reviews_part_1.pickle")
+preprocess_all_xml_documents(path = './data/reviews_part_2', n = None, reviews_filename = "./data/all_reviews_part_2.pickle")
+merge_dfs(path1="./data/df_part_1.pickle", path2="./data/df_part_2.pickle", final_path="./data/df.pickle")
+remove_unsuded_columns(path = "./data/df.pickle")
+remove_rows_if_below_30(path= "./data/df.pickle")
+save_df_in_splits(path= "./data/df.pickle")

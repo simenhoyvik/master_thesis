@@ -28,7 +28,8 @@ class TFIDF_LOGREG:
 
     def train_sgd_pytorch(self, text_combination, cleaning, train, val, learning_rate):
         model_type = 'tf-idf-logreg'
-        model_name = f'{text_combination}-{model_type}-{learning_rate}-cleaning-{cleaning}-batch-size-{self.batch_size}'
+        if 'study_title' in text_combination: model_name = f'QTA-{model_type}-{learning_rate}-cleaning-{cleaning}-batch-size-{self.batch_size}'
+        else: model_name = f'QA-{model_type}-{learning_rate}-cleaning-{cleaning}-batch-size-{self.batch_size}'
         if self.verbose: print(f"Training model: {model_name}")
         train = preprocess_df_1(train, self.verbose,text_combination,cleaning)
         val = preprocess_df_1(val, self.verbose,text_combination,cleaning)

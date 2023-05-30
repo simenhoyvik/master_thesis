@@ -33,22 +33,12 @@ class Main:
             print(f"DROPOUT VALUE: {dropout_value}")
         
         self.verbose = verbose
-
-        '''
-        if force_restart:
-            df = load_pickle("./data/processed/df.pickle")
-            self.train, self.val, self.test = split_groupby(df, split_ratio, 'qid', reduced, data_aug_n, self.verbose)
-            save_pickle('./data/train_test/train_test.pickle', (self.train, self.val, self.test))
-        else:
-            self.train, self.val, self.test = load_pickle('./data/train_test/train_test.pickle')
-        '''
-        #df = load_pickle("./data/analysis_testing/df.pickle")
-        #df = load_pickle(df_path)
         
         filenames = next(walk(df_path), (None, None, []))[2]
         dfs = []
         for file in filenames:
-            dfs.append(load_pickle(df_path + file))
+            if file.startswith("df"):
+                dfs.append(load_pickle(df_path + file))
         df = pd.concat(dfs)
 
         #df = load_pickle("./data/processed/df_pairwise.pickle")
@@ -128,17 +118,21 @@ class Main:
             print(f"LEARNING RATE: {learning_rate}")
             print(f"CV: {n_cv}")
         
+        '''
         self.bm25.train_and_evaluate_model(
             'title study_abstract',
             self.train,
             self.val,
             True)
-
+        '''
+        '''
         self.pubmed_model.evaluate(
             pubmed_search_amount = pubmed_search_amount, 
-            df_val = self.val,
+            df = self.val,
             validation = True
         )
+        '''
+        '''
         
         self.tfidf_logreg.train_and_evaluate_all(
             text_combinations = text_combinations_approach_1_2,
@@ -189,6 +183,7 @@ class Main:
             max_abstract_length = max_abstract_length,
             sub_approach = 2
         )
+        '''
 
         best_map_bm25 = self.bm25.get_best_val_score()
         best_map_pubmed = self.pubmed_model.get_best_val_score()
@@ -221,14 +216,14 @@ if platform == "linux":
 else: 
     DEVICE = 'cpu'
     BATCH_SIZE = 1
-DF_PATH = "./data_processed/"
+DF_PATH = "./data/"
 BM_25_INIT = 500
 PUBMED_MODEL_SEARCH_MAX = 100
 SPLIT_RATIO = 0.15
 N_EPOCHS = 30
 LEARNING_RATE = 0.00001
 EARLY_STOPPING = 30
-REDUCED = None
+REDUCED = 0.99
 VERBOSE = True
 FORCE_RESTART = False
 MAX_LEN = 512
